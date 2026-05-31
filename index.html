@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NTTS Namibia</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 
 <body class="bg-gray-100 text-gray-900">
@@ -12,13 +16,10 @@
 <!-- HEADER -->
 <header class="bg-black text-white p-4 flex justify-between">
   <h1 class="font-bold text-xl">NTTS Namibia</h1>
-  <button onclick="openAdmin()" class="bg-orange-500 px-3 py-1 rounded">
-    Admin
-  </button>
 </header>
 
 <!-- HERO -->
-<section class="p-10 text-center bg-cover bg-center text-white"
+<section class="p-10 text-center text-white bg-cover bg-center"
 style="background-image:url('https://images.unsplash.com/photo-1501785888041-af3ef285b470');">
 
   <div class="bg-black/60 p-10 rounded-xl">
@@ -66,7 +67,7 @@ style="background-image:url('https://images.unsplash.com/photo-1501785888041-af3
 
   <input id="name" placeholder="Full Name" class="border p-2 w-full mb-2">
   <input id="phone" placeholder="Phone Number" class="border p-2 w-full mb-2">
-  <input id="dates" placeholder="Dates (e.g. 10-15 June)" class="border p-2 w-full mb-2">
+  <input id="dates" placeholder="Dates" class="border p-2 w-full mb-2">
   <input id="vehicle" placeholder="Vehicle Selected" class="border p-2 w-full mb-2">
 
   <button onclick="submitBooking()" class="bg-orange-500 text-white px-4 py-2 rounded">
@@ -77,115 +78,101 @@ style="background-image:url('https://images.unsplash.com/photo-1501785888041-af3
 <!-- LIVE BOOKINGS -->
 <section class="p-6">
   <h2 class="font-bold">Live Bookings</h2>
-  <div id="list" class="mt-4"></div>
+  <div id="list"></div>
 </section>
 
-<!-- ADMIN -->
-<div id="adminPanel" class="hidden fixed inset-0 bg-black/80 p-10">
-  <div class="bg-white p-6 rounded max-w-xl mx-auto">
-
-    <h2 class="font-bold text-xl">Admin Login</h2>
-    <input id="adminPass" placeholder="Password" class="border p-2 w-full mt-2">
-
-    <button onclick="login()" class="bg-black text-white px-4 py-2 mt-2">
-      Login
-    </button>
-
-    <div id="adminContent" class="hidden mt-4">
-      <h3 class="font-bold">Bookings</h3>
-      <div id="adminList"></div>
-    </div>
-
-    <button onclick="closeAdmin()" class="text-red-500 mt-4">Close</button>
-
-  </div>
-</div>
-
-<!-- SCRIPT -->
 <script>
-let bookings = [];
+/* =========================
+   🔥 FIREBASE CONFIG
+========================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDcGsPkONNgUlAqY4gZwTPtbXHg7qMyiNw",
+  authDomain: "ntts-business.firebaseapp.com",
+  projectId: "ntts-business",
+  storageBucket: "ntts-business.firebasestorage.app",
+  messagingSenderId: "814879443432",
+  appId: "1:814879443432:web:9ee5e2a13927ff34ab3c5d"
+};
 
-// BOOK VEHICLE
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* =========================
+   🚗 SELECT VEHICLE
+========================= */
 function book(v){
   document.getElementById("vehicle").value = v;
 }
 
-// SUBMIT BOOKING
-function submitBooking(){
+/* =========================
+   💰 SUBMIT BOOKING
+========================= */
+async function submitBooking(){
 
-  let name = document.getElementById("name").value;
-  let phone = document.getElementById("phone").value;
-  let dates = document.getElementById("dates").value;
-  let vehicle = document.getElementById("vehicle").value;
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const dates = document.getElementById("dates").value;
+  const vehicle = document.getElementById("vehicle").value;
 
   if(!name || !phone || !vehicle){
-    alert("Fill all fields");
+    alert("Please fill all fields");
     return;
   }
 
-  let b = {name, phone, dates, vehicle};
-  bookings.push(b);
+  const booking = {
+    name,
+    phone,
+    dates,
+    vehicle,
+    status: "Pending",
+    createdAt: new Date()
+  };
 
-  render();
+  await db.collection("bookings").add(booking);
 
-  // WhatsApp (YOUR NUMBER)
-  let msg = `NTTS BOOKING:%0AName: ${name}%0APhone: ${phone}%0AVehicle: ${vehicle}%0ADates: ${dates}`;
+  loadBookings();
+
+  let msg = `🚗 NTTS BOOKING%0AName: ${name}%0APhone: ${phone}%0AVehicle: ${vehicle}%0ADates: ${dates}`;
+
   window.open(`https://wa.me/264811481458?text=${msg}`, "_blank");
 
   alert("Booking sent!");
 }
 
-// RENDER
-function render(){
-  let list = document.getElementById("list");
-  list.innerHTML = "";
+/* =========================
+   📊 LOAD LIVE BOOKINGS
+========================= */
+function loadBookings(){
 
-  bookings.forEach(b=>{
-    list.innerHTML += `
-      <div class="bg-white p-2 m-2 shadow rounded">
-        ${b.name} - ${b.vehicle} - ${b.dates}
-      </div>
-    `;
-  });
+  const list = document.getElementById("list");
 
-  renderAdmin();
+  db.collection("bookings")
+    .orderBy("createdAt","desc")
+    .onSnapshot(snapshot => {
+
+      list.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        const b = doc.data();
+
+        list.innerHTML += `
+          <div class="bg-white p-2 m-2 shadow rounded">
+            <b>${b.name}</b><br>
+            🚙 ${b.vehicle}<br>
+            📅 ${b.dates}<br>
+            📌 Status: ${b.status}
+          </div>
+        `;
+      });
+
+    });
 }
 
-// ADMIN
-function openAdmin(){
-  document.getElementById("adminPanel").classList.remove("hidden");
-}
+/* =========================
+   🚀 START SYSTEM
+========================= */
+loadBookings();
 
-function closeAdmin(){
-  document.getElementById("adminPanel").classList.add("hidden");
-}
-
-function login(){
-  let pass = document.getElementById("adminPass").value;
-
-  if(pass === "ntts123"){
-    document.getElementById("adminContent").classList.remove("hidden");
-    renderAdmin();
-  } else {
-    alert("Wrong password");
-  }
-}
-
-function renderAdmin(){
-  let adminList = document.getElementById("adminList");
-  adminList.innerHTML = "";
-
-  bookings.forEach(b=>{
-    adminList.innerHTML += `
-      <div class="border p-2 mt-2">
-        <b>${b.name}</b> | ${b.vehicle} | ${b.dates}
-      </div>
-    `;
-  });
-}
-
-// INIT
-render();
 </script>
 
 </body>
