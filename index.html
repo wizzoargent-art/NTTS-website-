@@ -1,47 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTTS Namibia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+
+<!-- HEADER -->
+<header class="bg-black text-white p-4 flex justify-between">
+  <h1 class="font-bold text-xl">NTTS Namibia</h1>
+  <button onclick="openAdmin()" class="bg-orange-500 px-3 py-1 rounded">
+    Admin
+  </button>
+</header>
+
+<!-- HERO -->
+<section class="p-10 text-center bg-cover bg-center text-white"
+style="background-image:url('https://images.unsplash.com/photo-1501785888041-af3ef285b470');">
+
+  <div class="bg-black/60 p-10 rounded-xl">
+    <h2 class="text-3xl font-bold">Explore Namibia with NTTS</h2>
+    <p>4x4 Rentals • Safaris • Travel Experiences</p>
+  </div>
+</section>
+
+<!-- VEHICLES -->
+<section class="p-6">
+  <h2 class="text-xl font-bold mb-4">Available Vehicles</h2>
+
+  <div class="grid md:grid-cols-3 gap-4">
+
+    <div class="bg-white p-4 shadow rounded">
+      <h3 class="font-bold">Toyota Hilux</h3>
+      <p>N$ 1200 / day</p>
+      <button onclick="book('Toyota Hilux')" class="bg-green-600 text-white px-3 py-2 mt-2 rounded">
+        Book Now
+      </button>
+    </div>
+
+    <div class="bg-white p-4 shadow rounded">
+      <h3 class="font-bold">Land Cruiser</h3>
+      <p>N$ 1800 / day</p>
+      <button onclick="book('Land Cruiser')" class="bg-green-600 text-white px-3 py-2 mt-2 rounded">
+        Book Now
+      </button>
+    </div>
+
+    <div class="bg-white p-4 shadow rounded">
+      <h3 class="font-bold">SUV Comfort</h3>
+      <p>N$ 900 / day</p>
+      <button onclick="book('SUV')" class="bg-green-600 text-white px-3 py-2 mt-2 rounded">
+        Book Now
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<!-- BOOKING FORM -->
+<section class="p-6 bg-white">
+  <h2 class="text-xl font-bold mb-4">Quick Booking</h2>
+
+  <input id="name" placeholder="Full Name" class="border p-2 w-full mb-2">
+  <input id="phone" placeholder="Phone Number" class="border p-2 w-full mb-2">
+  <input id="dates" placeholder="Dates (e.g. 10-15 June)" class="border p-2 w-full mb-2">
+  <input id="vehicle" placeholder="Vehicle Selected" class="border p-2 w-full mb-2">
+
+  <button onclick="submitBooking()" class="bg-orange-500 text-white px-4 py-2 rounded">
+    Submit Booking
+  </button>
+</section>
+
+<!-- LIVE BOOKINGS -->
+<section class="p-6">
+  <h2 class="font-bold">Live Bookings</h2>
+  <div id="list" class="mt-4"></div>
+</section>
+
+<!-- ADMIN -->
+<div id="adminPanel" class="hidden fixed inset-0 bg-black/80 p-10">
+  <div class="bg-white p-6 rounded max-w-xl mx-auto">
+
+    <h2 class="font-bold text-xl">Admin Login</h2>
+    <input id="adminPass" placeholder="Password" class="border p-2 w-full mt-2">
+
+    <button onclick="login()" class="bg-black text-white px-4 py-2 mt-2">
+      Login
+    </button>
+
+    <div id="adminContent" class="hidden mt-4">
+      <h3 class="font-bold">Bookings</h3>
+      <div id="adminList"></div>
+    </div>
+
+    <button onclick="closeAdmin()" class="text-red-500 mt-4">Close</button>
+
+  </div>
+</div>
+
+<!-- SCRIPT -->
 <script>
-let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+let bookings = [];
 
 // BOOK VEHICLE
-function book(vehicle){
-  document.getElementById("vehicle").value = vehicle;
-  window.scrollTo(0, document.body.scrollHeight);
+function book(v){
+  document.getElementById("vehicle").value = v;
 }
 
 // SUBMIT BOOKING
 function submitBooking(){
 
-  let b = {
-    name: document.getElementById("name").value,
-    phone: document.getElementById("phone").value,
-    dates: document.getElementById("dates").value,
-    vehicle: document.getElementById("vehicle").value
-  };
+  let name = document.getElementById("name").value;
+  let phone = document.getElementById("phone").value;
+  let dates = document.getElementById("dates").value;
+  let vehicle = document.getElementById("vehicle").value;
 
-  if(!b.name || !b.phone || !b.vehicle){
-    alert("Please fill in all fields");
+  if(!name || !phone || !vehicle){
+    alert("Fill all fields");
     return;
   }
 
+  let b = {name, phone, dates, vehicle};
   bookings.push(b);
-  localStorage.setItem("bookings", JSON.stringify(bookings));
 
   render();
 
-  // WhatsApp
-  let msg = `NTTS BOOKING:%0AName: ${b.name}%0APhone: ${b.phone}%0AVehicle: ${b.vehicle}%0ADates: ${b.dates}`;
+  // WhatsApp (YOUR NUMBER)
+  let msg = `NTTS BOOKING:%0AName: ${name}%0APhone: ${phone}%0AVehicle: ${vehicle}%0ADates: ${dates}`;
   window.open(`https://wa.me/264811481458?text=${msg}`, "_blank");
 
-  alert("Booking submitted successfully!");
+  alert("Booking sent!");
 }
 
-// RENDER BOOKINGS
+// RENDER
 function render(){
   let list = document.getElementById("list");
   list.innerHTML = "";
 
-  bookings.forEach((b,i) => {
+  bookings.forEach(b=>{
     list.innerHTML += `
-      <div class="bg-white p-2 shadow rounded">
+      <div class="bg-white p-2 m-2 shadow rounded">
         ${b.name} - ${b.vehicle} - ${b.dates}
       </div>
     `;
@@ -50,7 +151,7 @@ function render(){
   renderAdmin();
 }
 
-// ADMIN PANEL
+// ADMIN
 function openAdmin(){
   document.getElementById("adminPanel").classList.remove("hidden");
 }
@@ -74,22 +175,18 @@ function renderAdmin(){
   let adminList = document.getElementById("adminList");
   adminList.innerHTML = "";
 
-  bookings.forEach((b,i) => {
+  bookings.forEach(b=>{
     adminList.innerHTML += `
       <div class="border p-2 mt-2">
         <b>${b.name}</b> | ${b.vehicle} | ${b.dates}
-        <button onclick="deleteBooking(${i})" class="text-red-500 ml-2">Delete</button>
       </div>
     `;
   });
 }
 
-function deleteBooking(i){
-  bookings.splice(i,1);
-  localStorage.setItem("bookings", JSON.stringify(bookings));
-  render();
-}
-
 // INIT
 render();
 </script>
+
+</body>
+</html>
